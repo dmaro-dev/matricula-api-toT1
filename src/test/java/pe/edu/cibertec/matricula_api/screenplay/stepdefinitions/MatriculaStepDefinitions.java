@@ -16,6 +16,8 @@ import java.util.Map;
 import static net.serenitybdd.screenplay.actors.OnStage.theActorCalled;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.matchesPattern;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class MatriculaStepDefinitions {
 
@@ -25,6 +27,8 @@ public class MatriculaStepDefinitions {
 
     private String alumno;
     private String token;
+    private double totalCotizado;
+    private long idMatricula;
 
     @Given("que el alumno {string} inicia sesion con la clave {string}")
     public void iniciaSesion(String usuario, String clave) {
@@ -47,6 +51,9 @@ public class MatriculaStepDefinitions {
                 .contentType(ContentType.JSON)
                 .body(Map.of("codigoAlumno", alumno, "cursos", List.of(curso)))
                 .post("/api/matriculas/cotizacion");
+        if (SerenityRest.lastResponse().statusCode() == 200) {
+            totalCotizado = SerenityRest.lastResponse().jsonPath().getDouble("total");
+        }
     }
 
     @Then("la cotizacion es:")
@@ -57,6 +64,61 @@ public class MatriculaStepDefinitions {
         assertThat(respuesta.jsonPath().getDouble("subtotal"), equalTo(numero(esperado.get("subtotal"))));
         assertThat(respuesta.jsonPath().getInt("descuento"), equalTo(Integer.parseInt(esperado.get("descuento"))));
         assertThat(respuesta.jsonPath().getDouble("total"), equalTo(numero(esperado.get("total"))));
+    }
+
+    @When("se matricula en el curso {string}")
+    public void seMatricula(String curso) {
+        SerenityRest.given()
+                .baseUri(baseUrl)
+                .header("Authorization", "Bearer " + token)
+                .contentType(ContentType.JSON)
+                .body(Map.of("codigoAlumno", alumno, "codigoCurso", curso))
+                .post("/api/matriculas");
+        if (SerenityRest.lastResponse().statusCode() == 201) {
+            idMatricula = SerenityRest.lastResponse().jsonPath().getLong("id");
+        }
+    }
+
+    @Then("la matricula queda {string} con monto {string} igual al de la cotizacion")
+    public void laMatriculaQueda(String estado, String monto) {
+        var respuesta = SerenityRest.lastResponse();
+        assertThat(respuesta.jsonPath().getString("estado"), equalTo(estado));
+        assertThat(respuesta.jsonPath().getDouble("monto"), equalTo(numero(monto)));
+        assertThat(respuesta.jsonPath().getDouble("monto"), equalTo(totalCotizado));
+    }
+
+    @When("paga la matricula con el metodo {string}")
+    public void pagaLaMatricula(String metodo) {
+        SerenityRest.given()
+                .baseUri(baseUrl)
+                .header("Authorization", "Bearer " + token)
+                .contentType(ContentType.JSON)
+                .body(Map.of("metodo", metodo))
+                .patch("/api/matriculas/{id}/pagar", idMatricula);
+    }
+
+    @Then("la matricula queda {string} con fecha de pago")
+    public void laMatriculaQuedaPagada(String estado) {
+        var respuesta = SerenityRest.lastResponse();
+        assertThat(respuesta.jsonPath().getString("estado"), equalTo(estado));
+        assertThat(respuesta.jsonPath().getString("fechaPago"), notNullValue());
+    }
+
+    @When("consulta sus pagos")
+    public void consultaSusPagos() {
+        SerenityRest.given()
+                .baseUri(baseUrl)
+                .header("Authorization", "Bearer " + token)
+                .get("/api/pagos");
+    }
+
+    @Then("existe un pago de la matricula con metodo {string} y numero de operacion valido")
+    public void existeElPago(String metodo) {
+        Map<String, Object> pago = SerenityRest.lastResponse().jsonPath()
+                .getMap("find { it.idMatricula == " + idMatricula + " }");
+        assertThat(pago, notNullValue());
+        assertThat((String) pago.get("metodo"), equalTo(metodo));
+        assertThat((String) pago.get("numeroOperacion"), matchesPattern("OP-\\d{6}"));
     }
 
     private static double numero(String texto) {
