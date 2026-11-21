@@ -15,11 +15,11 @@ public class Hooks {
     @Before(order = 0)
     public void identificacion() {
         String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
-        System.out.println("==================================================");
+        System.out.println(" ");
         System.out.println("Alumno : " + NOMBRE);
         System.out.println("Codigo : " + CODIGO);
         System.out.println("Fecha  : " + fecha);
-        System.out.println("==================================================");
+        System.out.println(" ");
     }
 
     @Before(order = 1)
