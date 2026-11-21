@@ -26,3 +26,10 @@ Característica: Matrícula del alumno
     Cuando consulta sus pagos
     Entonces el codigo de respuesta es 200
     Y existe un pago de la matricula con metodo "YAPE" y numero de operacion valido
+
+
+  Escenario: Regla de negocio que debe fallar
+    Cuando se matricula en el curso "LP5401"
+    Entonces el codigo de respuesta es 422
+    Y el codigo de error es "CURSO_APROBADO"
+    Y la respuesta cumple el esquema "error.json"
