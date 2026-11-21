@@ -3,8 +3,7 @@ Feature: Consulta de cursos
   Quiero consultar los cursos disponibles
   Para decidir en cuales me matriculo
 
-
-  Scenario: Consultar un cursos por codigo
+  Scenario: Consultar un curso por codigo
     Given que Ana consulta la API de matricula
     When busca el curso "PS5511"
     Then el codigo de respuesta es 200
@@ -24,6 +23,6 @@ Feature: Consulta de cursos
     And obtiene <cantidad> cursos
     Examples:
       | modalidad  | cantidad |
-      | PRESENCIAL | 3        |
-      | VIRTUAL    | 3        |
+      | PRESENCIAL | 5        |
+      | VIRTUAL    | 4        |
       | HIBRIDO    | 2        |
